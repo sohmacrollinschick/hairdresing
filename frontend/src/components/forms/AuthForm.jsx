@@ -1,14 +1,33 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
+import { Eye, EyeOff } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import PrimaryButton from "../buttons/PrimaryButton";
 import { supabase } from "../../services/supabaseClient";
+
+function PasswordToggle({ isVisible, onToggle, label }) {
+  const Icon = isVisible ? EyeOff : Eye;
+
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      className="absolute right-3 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center text-salonText/70 transition duration-300 hover:text-salonAccentHover focus:outline-none focus:ring-2 focus:ring-salonAccent/40"
+      aria-label={label}
+      title={label}
+    >
+      <Icon size={18} aria-hidden="true" />
+    </button>
+  );
+}
 
 export default function AuthForm({ mode }) {
   const isRegister = mode === "register";
   const navigate = useNavigate();
   const [error, setError] = useState("");
-  const { register, handleSubmit, formState: { isSubmitting } } = useForm();
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const { register, handleSubmit, getValues, formState: { errors, isSubmitting } } = useForm();
 
   const onSubmit = async (values) => {
     setError("");
@@ -40,7 +59,46 @@ export default function AuthForm({ mode }) {
           </>
         )}
         <input className="input" type="email" placeholder="Email" {...register("email", { required: true })} />
-        <input className="input" type="password" placeholder="Password" {...register("password", { required: true, minLength: 6 })} />
+        <div>
+          <div className="relative">
+            <input
+              className="input pr-12"
+              type={showPassword ? "text" : "password"}
+              placeholder="Password"
+              {...register("password", {
+                required: "Password is required",
+                minLength: { value: 6, message: "Password must be at least 6 characters" }
+              })}
+            />
+            <PasswordToggle
+              isVisible={showPassword}
+              onToggle={() => setShowPassword((value) => !value)}
+              label={showPassword ? "Hide password" : "Show password"}
+            />
+          </div>
+          {errors.password && <p className="mt-2 text-sm font-semibold text-salonAccentHover">{errors.password.message}</p>}
+        </div>
+        {isRegister && (
+          <div>
+            <div className="relative">
+              <input
+                className="input pr-12"
+                type={showConfirmPassword ? "text" : "password"}
+                placeholder="Confirm password"
+                {...register("confirm_password", {
+                  required: "Please confirm your password",
+                  validate: (value) => value === getValues("password") || "Passwords do not match"
+                })}
+              />
+              <PasswordToggle
+                isVisible={showConfirmPassword}
+                onToggle={() => setShowConfirmPassword((value) => !value)}
+                label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}
+              />
+            </div>
+            {errors.confirm_password && <p className="mt-2 text-sm font-semibold text-salonAccentHover">{errors.confirm_password.message}</p>}
+          </div>
+        )}
       </div>
       {error && <p className="mt-4 text-sm font-semibold text-red-600">{error}</p>}
       <PrimaryButton type="submit" className="mt-6 w-full" icon={false}>
